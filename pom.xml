@@ -6,13 +6,13 @@
 
     <groupId>bi.know.kettle.multihash</groupId>
     <artifactId>knowbi-multihash</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <pdi.version>8.1-SNAPSHOT</pdi.version>
         <swt.version>4.6</swt.version>
-        <pdi.dir>/home/hans/pentaho/PDI8.2/</pdi.dir>
+        <pdi.dir>/home/hans/pentaho/8.2CE/</pdi.dir>
     </properties>
 
 
@@ -23,7 +23,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <outputDirectory>${pdi.dir}/plugins/knowbi-multihash</outputDirectory>
+                    <outputDirectory>${pdi.dir}/plugins/knowbi-multihash</outputDirectory>cd
                 </configuration>
             </plugin>
             <plugin>

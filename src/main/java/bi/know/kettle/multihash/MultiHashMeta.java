@@ -1,8 +1,12 @@
 package bi.know.kettle.multihash;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import groovy.ui.Console;
+import jxl.biff.drawing.Origin;
 import org.eclipse.swt.widgets.Shell;
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
@@ -13,6 +17,8 @@ import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.xml.XMLHandler;
@@ -116,9 +122,8 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 			}
 		}
 
-
-		
 	}
+
 	
 	public void check(List<CheckResultInterface> remarks, TransMeta transmeta, StepMeta stepMeta, RowMetaInterface prev, String input[], String output[], RowMetaInterface info)
 	{
@@ -151,16 +156,52 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	}
 	
 	public void getFields(RowMetaInterface r, String origin, RowMetaInterface[] info, StepMeta nextStep, VariableSpace space){
-		
-			
+		if(outputField.keySet().size() > 0){
+			for(String key : outputField.keySet()){
+				ValueMetaInterface v = null;
+				v = new ValueMetaString( space.environmentSubstitute( key ) );
+				v.setOrigin(origin);
+				r.addValueMeta(v);
+			}
+		}
 	}
 		
 	public void readRep(Repository rep, ObjectId id_step, List<DatabaseMeta> databases, Map<String,Counter> counters) throws KettleException{
 		//TODO: add readRep
+		hashType = rep.getStepAttributeString(id_step,"hashType");
+		salt = rep.getStepAttributeString(id_step,"salt");
+		int nrFields = rep.countNrStepAttributes(id_step,"field");
+
+		//read outputfields combined with inputfields
+		for(int i=0;i<nrFields;i++){
+			String field = rep.getStepAttributeString(id_step,i,"field");
+			String key = field.split(":",2)[0];
+			String[] fields = field.split(":",2)[1].replaceFirst("\\[\\[","").replaceAll("\\]\\]$","").split("\\],\\[");
+			System.out.println(key.toString());
+			System.out.println(Arrays.asList(fields));
+			outputField.put(key,fields);
+		}
+
 	}
 
 	public void saveRep(Repository rep, ObjectId id_transformation, ObjectId id_step) throws KettleException{
 		//TODO: add saveRep
+		rep.saveStepAttribute(id_transformation,id_step,"hashType",hashType);
+		rep.saveStepAttribute(id_transformation,id_step,"salt",salt);
+
+		//create list for outputfiedls combined with inputfields
+		int keyIndex=0;
+		for(String key : outputField.keySet()){
+			String field = key + ":" + "[[";
+			int len = outputField.get(key).length;
+			len = len -1;
+			for(int i=0;i<len;i++){
+				field += outputField.get(key)[i] + "],[";
+			}
+			field += outputField.get(key)[len] + "]]";
+			rep.saveStepAttribute(id_transformation,id_step,keyIndex,"field", field);
+			keyIndex++;
+		}
 	}
 	
 	public Object clone()

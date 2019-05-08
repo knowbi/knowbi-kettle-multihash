@@ -8,6 +8,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
@@ -271,7 +272,6 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 			logError( BaseMessages.getString( PKG, "MultiHash.ErroGettingFields" ) );
 			fieldNames = new String[] {};
 		}
-
 	    
 	    //set columns for Form
 	    final int FieldsCols = 1;
@@ -287,7 +287,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	    fdFields.top = new FormAttachment(wlFields,margin);
 	    fdFields.bottom = new FormAttachment( wOK, -4 * margin );
 	    wFields.setLayoutData( fdFields );
-
+	    
 	    
 	    //Output fields List
 	    
@@ -375,7 +375,9 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 			wOutputList.setSelection(0);
 			selectedField = wOutputList.getItem(0).toString();
 		}else {
-			selectedField="";
+			selectedField=null;
+			wlFields.setEnabled(false);
+			wFields.setEnabled(false);
 		}
 		
 		populateTable();
@@ -407,37 +409,39 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	}
 	
 	public void newField() {
-		EnterStringDialog enterStringDialog = new EnterStringDialog( shell, "",
-				BaseMessages.getString( PKG, "MultiHash.NewField.Title" ),
-		        BaseMessages.getString( PKG, "MultiHash.NewField.Message" ) );
-		        String fieldName = enterStringDialog.open();
-		        if ( !fieldName.isEmpty()) {
-		          if ( outputFieldDialog.containsKey(fieldName) ) {
-		            MessageBox messageBox = new MessageBox( shell, SWT.ICON_ERROR );
-		            //CHECKSTYLE:LineLength:OFF
-		            messageBox.setText( BaseMessages.getString( PKG, "MultiHash.FieldExistsMessageBox.Title" ) );
-		            messageBox.setMessage( BaseMessages.getString( PKG, "MultiHash.FieldExistsMessageBox.Message" ) );
-		            messageBox.open();
-		            return;
-		          	}
-		          	//add new field to hashmap
-					outputFieldDialog.put(fieldName,new String[0]);
-		          	//input.allocate(fieldName,0);
-		          	int items = wOutputList.getItemCount();
-		          	wOutputList.add(fieldName);
-		          	wOutputList.setSelection(items);
-		          	selectedField = fieldName;
-		          	populateTable();
-		        }else{
-					MessageBox messageBox = new MessageBox( shell, SWT.ICON_ERROR );
+		saveFields();
+		EnterStringDialog enterStringDialog = new EnterStringDialog(shell, "",
+				BaseMessages.getString(PKG, "MultiHash.NewField.Title"),
+				BaseMessages.getString(PKG, "MultiHash.NewField.Message"));
+		String fieldName = enterStringDialog.open();
+		if (fieldName != null) {
+			if ( !fieldName.isEmpty()) {
+				if (outputFieldDialog.containsKey(fieldName)) {
+					MessageBox messageBox = new MessageBox(shell, SWT.ICON_ERROR);
 					//CHECKSTYLE:LineLength:OFF
-					messageBox.setText( BaseMessages.getString( PKG, "MultiHash.FieldEmptyMessageBox.Title" ) );
-					messageBox.setMessage( BaseMessages.getString( PKG, "MultiHash.FieldEmptyMessageBox.Message" ) );
+					messageBox.setText(BaseMessages.getString(PKG, "MultiHash.FieldExistsMessageBox.Title"));
+					messageBox.setMessage(BaseMessages.getString(PKG, "MultiHash.FieldExistsMessageBox.Message"));
 					messageBox.open();
 					return;
 				}
+				//add new field to hashmap
+				outputFieldDialog.put(fieldName, new String[0]);
+				//input.allocate(fieldName,0);
+				int items = wOutputList.getItemCount();
+				wOutputList.add(fieldName);
+				wOutputList.setSelection(items);
+				selectedField = fieldName;
+				populateTable();
+			} else {
+				MessageBox messageBox = new MessageBox(shell, SWT.ICON_ERROR);
+				//CHECKSTYLE:LineLength:OFF
+				messageBox.setText(BaseMessages.getString(PKG, "MultiHash.FieldEmptyMessageBox.Title"));
+				messageBox.setMessage(BaseMessages.getString(PKG, "MultiHash.FieldEmptyMessageBox.Message"));
+				messageBox.open();
+				return;
+			}
+		}
 	}
-		        
 	
 	public void remove() {
 		try{
@@ -450,6 +454,8 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 					selectedField = wOutputList.getItem(0).toString();
 				} else {
 					selectedField=null;
+					wlFields.setEnabled(false);
+					wFields.setEnabled(false);
 				}
 				populateTable();
 			}else{
@@ -465,8 +471,11 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	private void populateTable() {
 
 		Table fieldsTable = wFields.table;
+
 		fieldsTable.removeAll();
 		if(outputFieldDialog.size() > 0){
+			wlFields.setEnabled( true );
+			wFields.setEnabled( true );
 			if (outputFieldDialog.get(selectedField).length > 0) {
 				for (int i = 0; i < outputFieldDialog.get(selectedField).length; i++) {
 					TableItem ti = new TableItem(fieldsTable, SWT.NONE);
@@ -513,5 +522,6 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 
 
 	}
+
 
 }

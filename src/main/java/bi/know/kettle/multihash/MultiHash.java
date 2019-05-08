@@ -12,6 +12,7 @@ import java.util.zip.Checksum;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
+import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -170,6 +171,12 @@ public class MultiHash  extends BaseStep implements StepInterface {
    public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {
         meta = (MultiHashMeta) smi;
         data = (MultiHashData) sdi;
+
+
+        if(Utils.isEmpty(getInputRowSets())){
+			logError(BaseMessages.getString(PKG, "MultiHash.ErrorNoInputRows"));
+			return false;
+		}
 
         
         return super.init(smi, sdi);
