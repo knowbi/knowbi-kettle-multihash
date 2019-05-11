@@ -1,11 +1,8 @@
 package bi.know.kettle.multihash;
 
-import org.antlr.grammar.v3.ANTLRParser.exceptionGroup_return;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.pentaho.di.core.exception.KettleException;
-
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
@@ -28,13 +25,14 @@ public class MultiHash  extends BaseStep implements StepInterface {
 	private MultiHashMeta meta;
 	private MultiHashData data;
 	
-	private int nbRows, nbFields; 
+	private int nbRows,nbFields;
 	private String[] sourceFieldNames,stepFieldNames;
 	private LinkedHashMap<String,int[]> outputField = new LinkedHashMap<>();
 	private Object[] outputRow;
 	private byte[] saltBytes;
 	private int[] fieldIndex;
-	private ValueMetaString resultField;
+	private Boolean addSaltOutput;
+	private String salt;
 	
     public MultiHash(StepMeta s, StepDataInterface stepDataInterface, int c, TransMeta t, Trans dis) {
 		super(s,stepDataInterface,c,t,dis);
@@ -53,11 +51,15 @@ public class MultiHash  extends BaseStep implements StepInterface {
             
 	        data.outputRowMeta = (RowMetaInterface)getInputRowMeta().clone();
 	        sourceFieldNames =  data.outputRowMeta.getFieldNames();
-	        //resultField = new ValueMetaString(environmentSubstitute(meta.getResultField()));
+	        addSaltOutput = meta.getSaltOutput();
 	        
 
    	        nbFields = data.outputRowMeta.size();
-   	        saltBytes = environmentSubstitute(meta.getSalt()).toString().getBytes();
+   	        saltBytes = environmentSubstitute(meta.getSalt()).getBytes();
+   	        salt = environmentSubstitute(meta.getSalt());
+
+   	        meta.getFields(data.outputRowMeta,getStepname(),null,null,this,repository,metaStore);
+
 
 			for ( String key : meta.getOutputField().keySet() ) {
 				data.outputRowMeta.addValueMeta(new ValueMetaString(environmentSubstitute(key)));
@@ -76,6 +78,9 @@ public class MultiHash  extends BaseStep implements StepInterface {
 					stopStep(BaseMessages.getString(PKG, "MultiHash.generalError") + e.getMessage());
 				}
 			}
+			if(meta.saltOutput){
+				data.outputRowMeta.addValueMeta(new ValueMetaString(environmentSubstitute(meta.getSaltFieldName())));
+			}
         }        
         
         if ( r == null ) {
@@ -85,7 +90,8 @@ public class MultiHash  extends BaseStep implements StepInterface {
         }else
         {
         	try {
-
+				Integer resultFieldIdx = nbFields;
+				outputRow = r.clone();
 				for ( String key : outputField.keySet()) {
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -96,28 +102,33 @@ public class MultiHash  extends BaseStep implements StepInterface {
 
 					byte[] byteArray = baos.toByteArray();
 
-					Integer resultFieldIdx = data.outputRowMeta.indexOfValue(key);
+					//Integer resultFieldIdx = data.outputRowMeta.indexOfValue(key);
 
 					//generate Hash
 					switch (meta.getHashType()) {
 						case "CRC32":
-							Long hash = generateLongHash(r,key);
-							outputRow = RowDataUtil.addValueData(r, resultFieldIdx,  Long.toHexString(hash));
+							Long hash = generateLongHash(outputRow,key);
+							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx,  Long.toHexString(hash));
 							break;
 						case "SHA1":
-							outputRow = RowDataUtil.addValueData(r, resultFieldIdx, DigestUtils.sha1Hex(byteArray));
+							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha1Hex(byteArray));
 							break;
 						case "SHA256":
-							outputRow = RowDataUtil.addValueData(r, resultFieldIdx, DigestUtils.sha256Hex(byteArray));
+							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha256Hex(byteArray));
 							break;
 						case "SHA512":
-							outputRow = RowDataUtil.addValueData(r, resultFieldIdx, DigestUtils.sha512Hex(byteArray));
+							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha512Hex(byteArray));
 							break;
 						default:
-							outputRow = RowDataUtil.addValueData(r, resultFieldIdx, environmentSubstitute(meta.getSalt()));
+							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, environmentSubstitute(meta.getSalt()));
 							break;
 					}
+					resultFieldIdx++;
 				}
+				if(addSaltOutput){
+					outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, salt);
+				}
+
 				putRow(data.outputRowMeta, outputRow);
             	nbRows++;
        	     	setLinesWritten(nbRows);

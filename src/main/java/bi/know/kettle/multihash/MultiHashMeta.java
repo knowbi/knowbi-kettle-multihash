@@ -4,9 +4,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import groovy.ui.Console;
-import jxl.biff.drawing.Origin;
 import org.eclipse.swt.widgets.Shell;
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
@@ -19,7 +16,6 @@ import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
-import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
@@ -46,7 +42,8 @@ isSeparateClassLoaderNeeded=true
 public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	private static Class<?> PKG = MultiHash.class; // for i18n purposes, needed by Translator2!!
 	
-	public String salt, hashType, resultField;
+	public String salt, hashType, resultField, saltFieldName;
+	public Boolean saltOutput;
 	public String[] fieldName ;
 	public LinkedHashMap<String,String[]> outputField = new LinkedHashMap<String,String[]>();
 
@@ -81,6 +78,8 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 		String retval = "";
 		retval += "<hashType>" + hashType + "</hashType>"  + Const.CR;
 		retval += "<salt>" + salt + "</salt>"  + Const.CR;
+		retval += "<saltOutput>" + saltOutput + "</saltOutput>"  + Const.CR;
+		retval += "<saltFieldName>" + saltFieldName + "</saltFieldName>"  + Const.CR;
 		retval += "<fields>"  + Const.CR;
 		for ( String key : outputField.keySet() ) {
 			retval += "<field>" + Const.CR;
@@ -97,6 +96,8 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	
 	public void loadXML(Node stepnode, List<DatabaseMeta> databases, Map<String,Counter> counters) throws KettleXMLException{		
 		salt = XMLHandler.getTagValue(stepnode, "salt");
+		saltOutput = new Boolean (XMLHandler.getTagValue(stepnode, "saltOutput"));
+		saltFieldName = XMLHandler.getTagValue(stepnode, "saltFieldName");
 		hashType = XMLHandler.getTagValue(stepnode, "hashType");
 		
 		Node fields = XMLHandler.getSubNode(stepnode, "fields");
@@ -156,13 +157,18 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	}
 	
 	public void getFields(RowMetaInterface r, String origin, RowMetaInterface[] info, StepMeta nextStep, VariableSpace space){
+		ValueMetaInterface v;
 		if(outputField.keySet().size() > 0){
 			for(String key : outputField.keySet()){
-				ValueMetaInterface v = null;
 				v = new ValueMetaString( space.environmentSubstitute( key ) );
 				v.setOrigin(origin);
 				r.addValueMeta(v);
 			}
+		}
+		if(saltOutput){
+			v = new ValueMetaString( space.environmentSubstitute( saltFieldName ) );
+			v.setOrigin(origin);
+			r.addValueMeta(v);
 		}
 	}
 		
@@ -170,6 +176,8 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 		//TODO: add readRep
 		hashType = rep.getStepAttributeString(id_step,"hashType");
 		salt = rep.getStepAttributeString(id_step,"salt");
+		saltOutput = new Boolean(rep.getStepAttributeString(id_step,"saltOutput"));
+		saltFieldName = rep.getStepAttributeString(id_step,"saltFieldName");
 		int nrFields = rep.countNrStepAttributes(id_step,"field");
 
 		//read outputfields combined with inputfields
@@ -188,6 +196,8 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 		//TODO: add saveRep
 		rep.saveStepAttribute(id_transformation,id_step,"hashType",hashType);
 		rep.saveStepAttribute(id_transformation,id_step,"salt",salt);
+		rep.saveStepAttribute(id_transformation,id_step,"saltOutput",saltOutput);
+		rep.saveStepAttribute(id_transformation,id_step,"saltFieldName",saltFieldName);
 
 		//create list for outputfiedls combined with inputfields
 		int keyIndex=0;
@@ -229,14 +239,7 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	public void setSalt(String salt) {
 		this.salt = salt;
 	}
-	
-	public String getResultField() {
-		return resultField;
-	}
 
-	public void setResultField(String resultField) {
-		this.resultField = resultField;
-	}
 	
 	public String getHashType() {
 		return hashType;
@@ -259,7 +262,34 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	public static String[] getHashtypeDescs() {
 		return HashtypeDescs;
 	}
-	
+
+	public String getSaltFieldName() {
+		if(saltFieldName == null)
+		{
+			return "";
+		}else
+		{
+			return saltFieldName;
+		}
+
+	}
+
+	public void setSaltFieldName(String saltOutputField) {
+		this.saltFieldName = saltOutputField;
+	}
+
+	public Boolean getSaltOutput() {
+		if(saltOutput == null){
+			return false;
+		}else {
+			return saltOutput;
+		}
+	}
+
+	public void setSaltOutput(Boolean saltOutput) {
+		this.saltOutput = saltOutput;
+	}
+
 	//get index for selector
 	public int getHashTypeSelection() {
 		if(hashType == null) {
@@ -281,10 +311,6 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 			return outputField.get(outputFieldName);
 		}			
 	}
-
-	public void setFieldName(String outputFieldName, String[] fields) {
-		this.outputField.put(outputFieldName,fields);
-	}
 	
 	public LinkedHashMap<String, String[]> getOutputField() {
 		LinkedHashMap<String, String[]> copy = new LinkedHashMap<String, String[]>();
@@ -299,8 +325,5 @@ public class MultiHashMeta extends BaseStepMeta implements StepMetaInterface{
 	public void setOutputField(LinkedHashMap<String, String[]> outputField) {
 		this.outputField = outputField;
 	}
-	
-	public void removeOutputField(String outputField) {
-		this.outputField.remove(outputField);
-	}
+
 }

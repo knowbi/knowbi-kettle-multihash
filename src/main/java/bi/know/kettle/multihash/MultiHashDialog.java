@@ -8,7 +8,6 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
@@ -26,20 +25,17 @@ import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
-import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.dialog.EnterStringDialog;
+import org.pentaho.di.ui.core.dialog.ErrorDialog;
 import org.pentaho.di.ui.core.widget.ColumnInfo;
 import org.pentaho.di.ui.core.widget.TableView;
 import org.pentaho.di.ui.core.widget.TextVar;
-import org.pentaho.di.ui.spoon.Sleak;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.i18n.BaseMessages;
-
 import java.util.LinkedHashMap;
 
 public class MultiHashDialog extends BaseStepDialog implements StepDialogInterface {
@@ -50,6 +46,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	//Buttons
 	private Button wRemove;
 	private Button wNew;
+	private Button wGetFields;
 	
 	//fieldNames
 	private String[]  fieldNames;
@@ -63,11 +60,16 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	private Label wlSalt;
 	private TextVar wSalt;
 	private FormData fdlSalt, fdSalt;
+
+	//Button Add salt to output
+	private Label wlSaltOutput;
+	private Button wSaltOutput;
+	private FormData fdlSaltOutput, fdSaltOutput;
 	
-	//fieldname
-	private Label wlFieldName;
-	private TextVar wFieldName;
-	private FormData fdlFieldName, fdFieldName;
+	//Salt Fieldname
+	private Label wlSaltFieldName;
+	private TextVar wSaltFieldName;
+	private FormData fdlSaltFieldName, fdSaltFieldName;
 	
 	
 	//FieldList
@@ -77,14 +79,13 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	private ColumnInfo[] colHeader;
 	
 	//OutputFields
-	private Label wlOutputField;
-	private FormData fdlOutputFieldList, fdOutputFieldList;
 	private List wOutputList;
 	private String selectedField;
 	
 	//listeners
 	private Listener lsNew;
 	private Listener lsRemove;
+	private Listener lsGetFields;
 
 	//temp store fieldlist
 	private LinkedHashMap<String,String[]> outputFieldDialog = new LinkedHashMap<>();;
@@ -151,7 +152,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		};
 		wNew.addListener(SWT.Selection, lsNew);
 		
-		//new field button
+		//remove field button
 		wRemove = new Button(shell, SWT.PUSH);
 		wRemove.setText(BaseMessages.getString(PKG, "MultiHash.RemoveButton.Label")); //$NON-NLS-1$ 	
 		
@@ -161,6 +162,18 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 			}
 		};
 		wRemove.addListener(SWT.Selection, lsRemove);
+
+		//get fields button
+		wGetFields = new Button(shell, SWT.PUSH);
+		wGetFields.setText(BaseMessages.getString(PKG, "MultiHash.GetFieldsButton.Label")); //$NON-NLS-1$
+
+		lsGetFields = new Listener() {
+			public void handleEvent(Event e) {
+				getFields();
+			}
+		};
+		wGetFields.addListener(SWT.Selection, lsGetFields);
+
 				
 		//cancel button
 		wCancel = new Button(shell, SWT.PUSH);
@@ -174,7 +187,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 				};
 				wCancel.addListener(SWT.Selection, lsCancel);
 
-		BaseStepDialog.positionBottomButtons(shell, new Button[] { wOK,wNew,wRemove, wCancel }, margin, null);
+		BaseStepDialog.positionBottomButtons(shell, new Button[] { wOK,wNew,wRemove,wGetFields, wCancel }, margin, null);
 
 		//stepName label
 		//create label
@@ -252,6 +265,50 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		fdSalt.right = new FormAttachment( 100, 0 );
 	    wSalt.setLayoutData( fdSalt );
 
+	    //salt output checkbox
+		wlSaltOutput = new Label(shell, SWT.RIGHT);
+		wlSaltOutput.setText(BaseMessages.getString( PKG, "MultiHash.SaltOutput.Label") );
+		props.setLook(wlSaltOutput);
+
+		fdlSaltOutput = new FormData();
+		fdlSaltOutput.left = new FormAttachment( 0, 0 );
+		fdlSaltOutput.top = new FormAttachment( wSalt, margin );
+		fdlSaltOutput.right = new FormAttachment( middle, -margin );
+		wlSaltOutput.setLayoutData( fdlSaltOutput );
+		wSaltOutput = new Button( shell, SWT.CHECK );
+		//wCompatibility.setToolTipText( BaseMessages.getString( PKG, "CheckSumDialog.CompatibilityMode.Tooltip" ) );
+		props.setLook( wSaltOutput );
+		fdSaltOutput= new FormData();
+		fdSaltOutput.left = new FormAttachment( middle, 0 );
+		fdSaltOutput.top = new FormAttachment( wSalt, margin );
+		fdSaltOutput.right = new FormAttachment( 100, 0 );
+		wSaltOutput.setLayoutData( fdSaltOutput );
+		wSaltOutput.addSelectionListener( new SelectionAdapter() {
+			public void widgetSelected( SelectionEvent event ) {
+				wSaltFieldName.setEnabled(wSaltOutput.getSelection());
+			}
+		} );
+
+
+	    //salt Output field
+		wlSaltFieldName = new Label(shell, SWT.RIGHT);
+		wlSaltFieldName.setText(BaseMessages.getString( PKG, "MultiHash.SaltFieldName.Label") );
+		props.setLook(wlSaltFieldName);
+		fdlSaltFieldName = new FormData();
+		fdlSaltFieldName.left = new FormAttachment( 0, 0 );
+		fdlSaltFieldName.right = new FormAttachment( middle, -margin );
+		fdlSaltFieldName.top = new FormAttachment( wSaltOutput, margin );
+		wlSaltFieldName.setLayoutData(fdlSaltFieldName);
+
+		wSaltFieldName = new TextVar( transMeta, shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+		props.setLook(wSaltFieldName);
+		wSaltFieldName.addModifyListener( lsMod );
+
+		fdSaltFieldName = new FormData();
+		fdSaltFieldName.left = new FormAttachment( middle, 0 );
+		fdSaltFieldName.top = new FormAttachment( wSaltOutput, margin );
+		fdSaltFieldName.right = new FormAttachment( 100, 0 );
+		wSaltFieldName.setLayoutData( fdSaltFieldName );
 	    
 	    //Fieldlist
 	    wlFields = new Label(shell, SWT.NONE);
@@ -260,7 +317,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	    fdlFields = new FormData();
 	    fdlFields.left= new FormAttachment(middle,margin);
 	    fdlFields.right = new FormAttachment( middle, -margin );
-	    fdlFields.top = new FormAttachment(wSalt,margin);
+	    fdlFields.top = new FormAttachment(wSaltFieldName,margin);
 	    wlFields.setLayoutData(fdlFields);
 	    
 	    //Get Fieldnames    
@@ -351,6 +408,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 	
 	//get values from meta
 	private void getData(){
+		wSaltFieldName.setEnabled(false);
 		//get salt from meta
 		if(input.getSalt() != null){
 			wSalt.setText(input.getSalt());
@@ -379,6 +437,14 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 			wlFields.setEnabled(false);
 			wFields.setEnabled(false);
 		}
+
+
+		wSaltOutput.setSelection(input.getSaltOutput());
+		//enable/disable inputfield
+		wSaltFieldName.setEnabled(input.getSaltOutput());
+
+
+		wSaltFieldName.setText(input.getSaltFieldName());
 		
 		populateTable();
 		
@@ -405,6 +471,8 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		input.setSalt(wSalt.getText());
 		input.setHashType(wHashType.getText());
 		input.setOutputField(outputFieldDialog);
+		input.setSaltOutput(wSaltOutput.getSelection());
+		input.setSaltFieldName(wSaltFieldName.getText());
 		dispose();
 	}
 	
@@ -519,9 +587,35 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		}catch (Exception e) {
 			logError(BaseMessages.getString(PKG, "MultiHash.generalError") + e.getMessage());
 		}
+	}
 
+	private void getFields(){
+		//add all fields to fieldlist
+		try {
+			//get input row meta
+			RowMetaInterface r = transMeta.getPrevStepFields( stepname );
+			if(r != null) {
+
+				String[] inputFields = r.getFieldNames();
+				int startIndex = wFields.table.getItemCount() +1 ;
+				if (wOutputList.isEnabled()) {
+					//start from 1 to get itemcount in tabel correct
+					for (int i = 0; i < inputFields.length; i++){
+						Table fieldsTable = wFields.table;
+						TableItem ti = new TableItem(fieldsTable, SWT.NONE);
+						ti.setText(0, "" + ( startIndex + i));
+						ti.setText(1, inputFields[i]);
+					}
+				}
+			}
+
+		} catch (KettleException e){
+			new ErrorDialog( shell, BaseMessages.getString( PKG, "System.Dialog.GetFieldsFailed.Title" ), BaseMessages
+					.getString( PKG, "System.Dialog.GetFieldsFailed.Message" ), e );
+		}
 
 	}
+
 
 
 }
