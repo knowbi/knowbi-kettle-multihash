@@ -22,6 +22,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
@@ -36,6 +37,8 @@ import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
+import org.pentaho.di.ui.trans.step.TableItemInsertListener;
+
 import java.util.LinkedHashMap;
 
 public class MultiHashDialog extends BaseStepDialog implements StepDialogInterface {
@@ -595,17 +598,16 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 			//get input row meta
 			RowMetaInterface r = transMeta.getPrevStepFields( stepname );
 			if(r != null) {
-
-				String[] inputFields = r.getFieldNames();
-				int startIndex = wFields.table.getItemCount() +1 ;
-				if (wOutputList.isEnabled()) {
-					//start from 1 to get itemcount in tabel correct
-					for (int i = 0; i < inputFields.length; i++){
-						Table fieldsTable = wFields.table;
-						TableItem ti = new TableItem(fieldsTable, SWT.NONE);
-						ti.setText(0, "" + ( startIndex + i));
-						ti.setText(1, inputFields[i]);
-					}
+				if (wFields.isEnabled()) {
+					TableItemInsertListener insertListener = new TableItemInsertListener() {
+						@Override
+						public boolean tableItemInserted(TableItem tableItem, ValueMetaInterface v) {
+							tableItem.setText(2, BaseMessages.getString(PKG, "System.Combo.Yes"));
+							return true;
+						}
+					};
+					BaseStepDialog
+							.getFieldsFromPrevious(r, wFields, 1, new int[]{1}, new int[]{}, -1, -1, insertListener);
 				}
 			}
 
