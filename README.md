@@ -7,7 +7,7 @@ This plugin contains a transformation step that allows you to calculate multiple
 
 For documentation of the step see the wiki on GitHub: 
 
-https://github.com/knowbi/knowbi-multihash/wiki
+https://github.com/knowbi/knowbi-kettle-multihash/wiki
 
 # Building
 
