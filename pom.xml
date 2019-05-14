@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>bi.know.kettle.multihash</groupId>
-    <artifactId>knowbi-multihash</artifactId>
+    <artifactId>knowbi-kettle-multihash</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     
     <properties>
@@ -21,7 +21,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <outputDirectory>target/knowbi-multihash</outputDirectory>
+                    <outputDirectory>target/knowbi-kettle-multihash</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -36,7 +36,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${pdi.dir}/plugins/knowbi-multihash/lib</outputDirectory>
+                            <outputDirectory>${pdi.dir}/plugins/knowbi-kettle-multihash/lib</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
@@ -60,7 +60,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>target/knowbi-multihash</outputDirectory>
+                            <outputDirectory>target/knowbi-kettle-multihash</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>resources</directory>
