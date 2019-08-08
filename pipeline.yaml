@@ -1,0 +1,8 @@
+type: java
+targetFolder: target/knowbi-kettle-multihash
+runTests: false
+notifySlack: true
+saveArtifacts: true
+buildsToKeep: 5
+daysToKeep:
+slackChannel: jenkins
