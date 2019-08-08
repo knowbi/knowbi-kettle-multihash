@@ -151,6 +151,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		lsNew = new Listener() {
 			public void handleEvent(Event e) {
 				newField();
+				input.setChanged();
 				}
 		};
 		wNew.addListener(SWT.Selection, lsNew);
@@ -162,7 +163,9 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		lsRemove = new Listener() {
 			public void handleEvent(Event e) {
 				remove();
+				input.setChanged();
 			}
+
 		};
 		wRemove.addListener(SWT.Selection, lsRemove);
 
@@ -173,6 +176,7 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 		lsGetFields = new Listener() {
 			public void handleEvent(Event e) {
 				getFields();
+				input.setChanged();
 			}
 		};
 		wGetFields.addListener(SWT.Selection, lsGetFields);
@@ -398,6 +402,8 @@ public class MultiHashDialog extends BaseStepDialog implements StepDialogInterfa
 
 	
 		getData();
+
+		input.setChanged(false);
 		shell.open();
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch())
