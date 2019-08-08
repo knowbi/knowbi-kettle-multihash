@@ -96,7 +96,9 @@ public class MultiHash  extends BaseStep implements StepInterface {
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
 					for (int i = 0; i < outputField.get(key).length; i++) {
-						baos.write(r[outputField.get(key)[i]].toString().getBytes());
+						if(r[outputField.get(key)[i]]!=null) {
+							baos.write(r[outputField.get(key)[i]].toString().getBytes());
+						}
 					}
 					baos.write(saltBytes);
 
@@ -105,23 +107,27 @@ public class MultiHash  extends BaseStep implements StepInterface {
 					//Integer resultFieldIdx = data.outputRowMeta.indexOfValue(key);
 
 					//generate Hash
-					switch (meta.getHashType()) {
-						case "CRC32":
-							Long hash = generateLongHash(outputRow,key);
-							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx,  Long.toHexString(hash));
-							break;
-						case "SHA1":
-							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha1Hex(byteArray));
-							break;
-						case "SHA256":
-							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha256Hex(byteArray));
-							break;
-						case "SHA512":
-							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha512Hex(byteArray));
-							break;
-						default:
-							outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, environmentSubstitute(meta.getSalt()));
-							break;
+					if(byteArray.length!=0) {
+						switch (meta.getHashType()) {
+							case "CRC32":
+								Long hash = generateLongHash(outputRow, key);
+								outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, Long.toHexString(hash));
+								break;
+							case "SHA1":
+								outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha1Hex(byteArray));
+								break;
+							case "SHA256":
+								outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha256Hex(byteArray));
+								break;
+							case "SHA512":
+								outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, DigestUtils.sha512Hex(byteArray));
+								break;
+							default:
+								outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, environmentSubstitute(meta.getSalt()));
+								break;
+						}
+					}else{
+						outputRow = RowDataUtil.addValueData(outputRow, resultFieldIdx, null);
 					}
 					resultFieldIdx++;
 				}
@@ -150,7 +156,9 @@ public class MultiHash  extends BaseStep implements StepInterface {
 			String data = new String();
 
 			for (int i = 0; i < outputField.get(key).length; i++) {
-				data += r[outputField.get(key)[i]].toString();
+				if (r[outputField.get(key)[i]] != null) {
+					data += r[outputField.get(key)[i]].toString();
+				}
 			}
         	data += environmentSubstitute(meta.getSalt());
             byte bytes[] = data.getBytes();
